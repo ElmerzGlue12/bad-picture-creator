@@ -32,8 +32,8 @@ for img in buffer:
     entry = imgops.getEARs(imgops.getFaceFeatures(img))
     EARs.append(entry)
 
+# convert to numpy array for quicker sorting
 arr = np.array(EARs)
-#arr[np.isnan(arr)] = np.inf
 indexOrder = np.argsort(arr, axis=0)
 img = buffer[indexOrder[0][0]]
 
