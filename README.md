@@ -1,1 +1,21 @@
 # bad-picture-creator
+## Python Files
+- detect_eyes_realtime.py
+  - This file is a simple python executable that grabs frames from the webcam and detects faces and eyes. Writes average EAR of the two eyes to the frame.
+  - Usage: `py detect_eyes_realtime.py`
+  - Dependencies:
+    - OpenCV
+    - imutils
+    - dlib
+    - scipy
+- recognize_faces.py
+  - This file is a simple python executable that detects multiple faces from an image and boxes them.
+  - Formerly face_detection.py, renamed to avoid module naming conflicts
+  - Usage: `py recognize_faces.py`
+  - Dependencies:
+    - OpenCV
+- eye_detect.py
+  - This file detects multiple faces and eyes from a webcam stream and boxes them. 
+  - Usage: `py eye_detect.py`
+  - Dependencies:
+    - OpenCV
