@@ -1,8 +1,8 @@
 OVERALL: Get pictures from a video stream, detect faces, filter images based on facial features
 
-Stack: Python, OpenCV, Google Vision API for Python, face_recognition for Python
+Stack: Python 3.7, OpenCV 4, Google Vision API for Python, face_recognition for Python
 
-1. Get pictures from video stream
+1. Get pictures from video stream - JOEY
 
 2. Detect faces in a photo
 
