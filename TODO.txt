@@ -1,0 +1,19 @@
+OVERALL: Get pictures from a video stream, detect faces, filter images based on facial features
+
+Stack: Python, OpenCV, Google Vision API for Python, face_recognition for Python
+
+1. Get pictures from video stream
+
+2. Detect faces in a photo
+
+3. Filter out photos with no faces
+
+4. Detect facial features
+  a. Eyes open/closed
+  b. Mouth open/closed
+  c. Emotion 
+  d. Investigate what's available
+  
+5. Badness Score
+
+6. Memeify bad pictures
