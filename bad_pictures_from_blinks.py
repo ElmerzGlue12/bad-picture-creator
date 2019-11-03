@@ -26,7 +26,7 @@ ap.add_argument("-f", "--frames", type = int, default=2,
     help="the number of consecutive frames the eye must be below the threshold")
 ap.add_argument("-d", "--pictureDelay", type = float, default=9,
 	help="delay between blink detected to picture taken")
-ap.add_argument("-e", "--lowerEAR", type = float, default=0.2,
+ap.add_argument("-e", "--lowerEAR", type = float, default=0.18,
 	help="lower ear vetting range")
 ap.add_argument("-g", "--upperEAR", type = float, default=0.22,
 	help="upper ear vetting range")
@@ -247,11 +247,20 @@ def main() :
                     #     plt.imshow(img)
                     # plt.show()
 
-                    if derFrames[1][args["pictureDelay"]] < args["upperEAR"] and derFrames[1][args["pictureDelay"]] > args["lowerEAR"]:
+                    # worstPhotos.append(derFrames[0][2])
+                    # worstPhotos.append(derFrames[0][3])
+                    # worstPhotos.append(derFrames[0][4])
+                    #
+                    # derFrames[0].pop(2)
+                    # derFrames[0].pop(2)
+                    # derFrames[0].pop(2)
+
+                    if derFrames[1][args["pictureDelay"]] < args["upperEAR"]+0.01 and derFrames[1][args["pictureDelay"]] > args["lowerEAR"]-0.01:
                         worstPhotos.append(derFrames[0][args["pictureDelay"]])
                         derFrames[0].pop(args["pictureDelay"])
                         derFrames[1].pop(args["pictureDelay"])
                         TOTAL += 1
+                        print(TOTAL)
 
                     # vets bad bad images
                     i = 0
@@ -265,6 +274,7 @@ def main() :
                     for photo in derFrames[0]:
                         worstPhotos.append(photo)
                         TOTAL += 1
+                        print(TOTAL)
 
                     # fig = plt.figure(figsize=(4, 8))
                     # columns = 1
@@ -316,14 +326,14 @@ def main() :
         if key == ord("q"):
             break
 
-    fig = plt.figure(figsize=(4, 8))
-    columns = 3
-    rows = int(len(worstPhotos)/3)
-    for i in range(1, columns * rows + 1):
-        img = worstPhotos[i - 1]
-        fig.add_subplot(rows, columns, i)
-        plt.imshow(img)
-    plt.show()
+    # fig = plt.figure(figsize=(4, 8))
+    # columns = 3
+    # rows = int(len(worstPhotos)/3)
+    # for i in range(1, columns * rows + 1):
+    #     img = worstPhotos[i - 1]
+    #     fig.add_subplot(rows, columns, i)
+    #     plt.imshow(img)
+    # plt.show()
 
     # do a bit of cleanup
     cv2.destroyAllWindows()
