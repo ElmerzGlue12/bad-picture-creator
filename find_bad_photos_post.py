@@ -28,15 +28,26 @@ cv2.destroyAllWindows()
 
 # get EARs for each frame
 EARs = []
+MARs = []
 for img in buffer:
-    entry = imgops.getEARs(imgops.getFaceFeatures(img))
-    EARs.append(entry)
+    features = imgops.getFaceFeatures(img)
+    EAR = imgops.getEARs(features)
+    MAR = imgops.getMARs(features)
+    EARs.append(EAR)
+    MARs.append(MAR)
 
 # convert to numpy array for quicker sorting
-arr = np.array(EARs)
-indexOrder = np.argsort(arr, axis=0)
-img = buffer[indexOrder[0][0]]
+EARray = np.array(EARs)
+MARray = np.array(MARs)
+indexOrderEyes = np.argsort(EARray, axis=0)
+indexOrderMouth = np.argsort(MARray, axis=0)
+eyeBuf = indexOrderEyes[0:5][0:5]
+mouthBuf = indexOrderMouth[-5:][-5:]
 
-cv2.imshow('img', img)
-cv2.waitKey(0)
+for i in eyeBuf:
+    cv2.imshow('img', buffer[i[0]])
+    cv2.waitKey(0)
+for i in mouthBuf:
+    cv2.imshow('img', buffer[i[0]])
+    cv2.waitKey(0)
 cv2.destroyAllWindows()

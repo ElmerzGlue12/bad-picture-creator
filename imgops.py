@@ -8,7 +8,7 @@ from imutils import face_utils
 import dlib
 
 # internal imports
-import eyeutils
+import faceops
 
 # get detector objects from dlib
 detector = dlib.get_frontal_face_detector()
@@ -16,6 +16,7 @@ predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["right_eye"]
+(mStart, mEnd) = face_utils.FACIAL_LANDMARKS_IDXS["mouth"]
 
 def getFaceFeatures(img, pyramids=1):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -34,10 +35,20 @@ def getEARs(face_list):
     for face in face_list:
         left = face[lStart:lEnd]
         right = face[rStart:rEnd]
-        EARs = (eyeutils.getEAR(left), eyeutils.getEAR(right))
+        EARs = (faceops.getEAR(left), faceops.getEAR(right))
         EAR_list.append((EARs[0] + EARs[1]) / 2.0)
 
     if len(EAR_list) == 0:
         EAR_list.append(float('nan'))
     
     return EAR_list
+
+def getMARs(face_list):
+    MAR_list = []
+    for face in face_list:
+        mouth = face[mStart:mEnd]
+        MAR_list.append(faceops.getMAR(mouth))
+    if len(MAR_list) == 0:
+        MAR_list.append(0)
+    return MAR_list
+

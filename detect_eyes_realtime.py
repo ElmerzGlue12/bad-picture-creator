@@ -6,8 +6,8 @@ from imutils.video import WebcamVideoStream
 import dlib
 from scipy.spatial import distance
 
-
-import eyeutils
+import faceops
+import imgops
 
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
@@ -19,6 +19,7 @@ cap = WebcamVideoStream(src=0).start()
 
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
+(mStart, mEnd) = face_utils.FACIAL_LANDMARKS_IDXS["mouth"]
 
 while True:
     # Read the frame
@@ -36,26 +37,24 @@ while True:
     if len(face_list) > 0:
         left_eye = face_list[0][lStart:lEnd]
         right_eye = face_list[0][rStart:rEnd]
-        left_ear = eyeutils.getEAR(left_eye)
-        right_ear = eyeutils.getEAR(right_eye)
+        left_ear = faceops.getEAR(left_eye)
+        right_ear = faceops.getEAR(right_eye)
+        MAR = imgops.getMARs(face_list)[0]
+        for (x, y) in face_list[0][mStart:mEnd]:
+            img[y, x] = [255,255,255]
     else:
         left_eye = []
         right_eye = []
         left_ear = 0
         right_ear = 0
 
-    for (x, y) in left_eye:
-        img[y,x] = [0,255,0]
-
     cv2.putText(img, "EAR: " + str((left_ear+right_ear)/2), (0,100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
-
-    for (x, y) in right_eye:
-        img[y,x] = [0,255,0]
+    cv2.putText(img, "EAM: " + str(MAR), (0, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
     # Display
     cv2.imshow('img', img)
     # Stop if escape key is pressed
-    if cv2.waitKey(1) & 0xff == ord('q'):
+    if cv2.waitKey(1) & 0xff == 27:
         break
 # Release the VideoCapture object
 cap.stop()
