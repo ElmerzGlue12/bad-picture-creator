@@ -10,6 +10,82 @@ import imutils
 import time
 import dlib
 import cv2
+import queue
+import numpy as np
+from matplotlib import pyplot as plt
+
+# finds the greatest rate of change in the EAR
+def earDerivative(beforeBlink, afterBlink):
+    # holds a combination of the before and after blink frames
+    frames = []
+
+    # extracts the frames
+
+    for i in range(beforeBlink.qsize()):
+        frames.append(beforeBlink.get())
+
+    for i in range(afterBlink.qsize()):
+        frames.append(afterBlink.get())
+
+    # holds the change in the ear between the n and n+1 frame
+    derivative = []
+
+    for i in range(frames.__len__() - 1):
+        derivative.append(abs(frames[i][0] - frames[i+1][0]))
+
+    returnFrames = [], []
+
+    for i in range(5):
+        returnFrames[0].append(frames[derivative.index(max(derivative))][1])
+        returnFrames[1].append(frames[derivative.index(max(derivative))][0])
+        frames.pop(derivative.index(max(derivative)))
+        derivative.pop(derivative.index(max(derivative)))
+
+    return returnFrames
+
+def runFrames(vs, detector, predictor, TOTAL, ear):
+    # grab the indexes of the facial landmarks for the left and
+    # right eye, respectively
+    (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
+    (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
+
+    frame = vs.read()
+
+    frame = imutils.resize(frame, width=450)
+
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # detect faces in the grayscale frame
+    rects = detector(gray, 0)
+
+    # draw the total number of blinks on the frame along with
+    # the computed eye aspect ratio for the frame
+    cv2.putText(frame, "Photos: {}".format(TOTAL), (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+    # show the frame
+    cv2.imshow("Frame", frame)
+    cv2.waitKey(1)
+
+    # determine the facial landmarks for the face region, then
+    # convert the facial landmark (x, y)-coordinates to a NumPy
+    # array
+    shape = predictor(gray, rects[0])
+    shape = face_utils.shape_to_np(shape)
+
+    # extract the left and right eye coordinates, then use the
+    # coordinates to compute the eye aspect ratio for both eyes
+    leftEye = shape[lStart:lEnd]
+    rightEye = shape[rStart:rEnd]
+    leftEAR = eye_aspect_ratio(leftEye)
+    rightEAR = eye_aspect_ratio(rightEye)
+
+    # average the eye aspect ratio together for both eyes
+    ear = (leftEAR + rightEAR) / 2.0
+
+    return (ear, frame)
 
 def eye_aspect_ratio(eye):
     # compute the euclidean distances between the two sets of
@@ -48,6 +124,11 @@ def main() :
     # initialize the frame counters and the total number of blinks
     COUNTER = 0
     TOTAL = 0
+
+    #initialize queue that holds the frames and ear before and after the blink
+    beforeBlink = queue.Queue()
+    afterBlink = queue.Queue()
+
 
     # initialize dlib's face detector (HOG-based) and then create
     # the facial landmark predictor
@@ -88,7 +169,9 @@ def main() :
     
         # detect faces in the grayscale frame
         rects = detector(gray, 0)
-    
+
+        key = 0
+
         # loop over the face detections
         for rect in rects:
             # determine the facial landmarks for the face region, then
@@ -109,24 +192,87 @@ def main() :
     
             # compute the convex hull for the left and right eye, then
             # visualize each of the eyes
-            leftEyeHull = cv2.convexHull(leftEye)
-            rightEyeHull = cv2.convexHull(rightEye)
-            cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
-            cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
-    
+            # leftEyeHull = cv2.convexHull(leftEye)
+            # rightEyeHull = cv2.convexHull(rightEye)
+            # cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+            # cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+
             # check to see if the eye aspect ratio is below the blink
             # threshold, and if so, increment the blink frame counter
             if ear < EYE_AR_THRESH:
-                #adds a delay after detecting the blink before taking the photo
-                for i in range(args["pictureDelay"]):
-                    frame = vs.read()
-                frame = imutils.resize(frame, width=450)
-                cv2.imwrite("bad_photo.jpg", frame)
-                COUNTER += 1
-    
+                # adds a delay after detecting the blink before taking the photo
+                # for i in range(args["pictureDelay"]): 
+                # frame = vs.read()
+                # frame = imutils.resize(frame, width=450)
+                # cv2.imwrite("bad_photo.jpg", frame)
+                TOTAL += 1
+
+                # empties the queue
+                afterBlink.empty()
+
+                # saves the blink frame
+                afterBlink.put((ear, frame))
+
+                # saves the next frames
+                for i in range(10):
+                    if len(detector(gray, 0)) > 0:
+                        try:
+                            afterBlink.put(runFrames(vs, detector, predictor, TOTAL, ear))
+                        except:
+                            pass
+
+                # frames from the derivative method
+                derFrames = (earDerivative(beforeBlink, afterBlink))
+
+                fig = plt.figure(figsize=(4, 8))
+                columns = 1
+                rows = 5
+                for i in range(1, columns * rows + 1):
+                    img = derFrames[0][i-1]
+                    fig.add_subplot(rows, columns, i)
+                    plt.imshow(img)
+                plt.show()
+
+
+                #deletes the first and last images from the derivative method
+                # derFrames[0].pop(4)
+                # derFrames[1].pop(4)
+                #
+                # derFrames[0].pop(0)
+                # derFrames[1].pop(0)
+
+                i = 0
+                while(i < len(derFrames[1])):
+                    if derFrames[1][i] >= 0.2:
+                        derFrames[0].pop(i)
+                        derFrames[1].pop(i)
+                    else:
+                        i += 1
+
+
+                fig = plt.figure(figsize=(4, 8))
+                columns = 1
+                rows = len(derFrames[0])
+                for i in range(1, columns * rows + 1):
+                    img = derFrames[0][i - 1]
+                    fig.add_subplot(rows, columns, i)
+                    plt.imshow(img)
+                plt.show()
+
+
+
+
+
             # otherwise, the eye aspect ratio is not below the blink
             # threshold
             else:
+                # removes the oldest queue item if 10 frames have already been saved
+                if beforeBlink.qsize() >= 20:
+                    beforeBlink.get()
+
+                # adds to the queue of frames before the blink
+                beforeBlink.put((ear,frame))
+
                 # if the eyes were closed for a sufficient number of
                 # then increment the total number of blinks
                 if COUNTER >= EYE_AR_CONSEC_FRAMES:
@@ -134,17 +280,20 @@ def main() :
     
                 # reset the eye frame counter
                 COUNTER = 0
+
+                # draw the total number of blinks on the frame along with
+                # the computed eye aspect ratio for the frame
+                cv2.putText(frame, "Photos: {}".format(TOTAL), (10, 30),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+                # show the frame
+                cv2.imshow("Frame", frame)
+                key = cv2.waitKey(1) & 0xFF
     
-            # draw the total number of blinks on the frame along with
-            # the computed eye aspect ratio for the frame
-            cv2.putText(frame, "Photos: {}".format(TOTAL), (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-            cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-     
-        # show the frame
-        cv2.imshow("Frame", frame)
-        key = cv2.waitKey(1) & 0xFF
+
+
      
         # if the `q` key was pressed, break from the loop
         if key == ord("q"):
