@@ -1,8 +1,8 @@
 #!/usr/bin/env python3.7
-
 import cv2
 import imutils
 from imutils import face_utils
+from imutils.video import WebcamVideoStream
 import dlib
 from scipy.spatial import distance
 
@@ -13,7 +13,7 @@ detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
 # To capture video from webcam. 
-cap = cv2.VideoCapture(0)
+cap = WebcamVideoStream(src=0).start()
 # To use a video file as input 
 # cap = cv2.VideoCapture('filename.mp4')
 
@@ -23,7 +23,7 @@ cap = cv2.VideoCapture(0)
 
 while True:
     # Read the frame
-    _, img = cap.read()
+    img = cap.read()
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     rects = detector(gray, 1)
@@ -57,5 +57,5 @@ while True:
     if cv2.waitKey(1) & 0xff == 27:
         break
 # Release the VideoCapture object
-cap.release()
+cap.stop()
 cv2.destroyAllWindows()
