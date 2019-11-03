@@ -14,6 +14,27 @@ import queue
 import numpy as np
 from matplotlib import pyplot as plt
 
+# construct the argument parse and parse the arguments
+ap = argparse.ArgumentParser()
+ap.add_argument("-p", "--shape-predictor",default="shape_predictor_68_face_landmarks.dat",
+    help="path to facial landmark predictor")
+ap.add_argument("-v", "--video", type=str, default="camera",
+    help="path to input video file")
+ap.add_argument("-t", "--threshold", type = float, default=0.2,
+    help="threshold to determine closed eyes")
+ap.add_argument("-f", "--frames", type = int, default=2,
+    help="the number of consecutive frames the eye must be below the threshold")
+ap.add_argument("-d", "--pictureDelay", type = float, default=9,
+	help="delay between blink detected to picture taken")
+ap.add_argument("-e", "--lowerEAR", type = float, default=0.2,
+	help="lower ear vetting range")
+ap.add_argument("-g", "--upperEAR", type = float, default=0.22,
+	help="upper ear vetting range")
+ap.add_argument("-z", "--numCapturedPhotos", type = float, default=9,
+	help="number of photos to be catured before next layer of analysis")
+ap.add_argument("-i", "--displayInfo", type = bool, default=False,
+	help="Option to display EAR, eye trace and photo count on video")
+
 # finds the greatest rate of change in the EAR
 def earDerivative(beforeBlink, afterBlink):
     # holds a combination of the before and after blink frames
@@ -35,7 +56,7 @@ def earDerivative(beforeBlink, afterBlink):
 
     returnFrames = [], []
 
-    for i in range(5):
+    for i in range(10):
         returnFrames[0].append(frames[derivative.index(max(derivative))][1])
         returnFrames[1].append(frames[derivative.index(max(derivative))][0])
         frames.pop(derivative.index(max(derivative)))
@@ -60,10 +81,11 @@ def runFrames(vs, detector, predictor, TOTAL, ear):
 
     # draw the total number of blinks on the frame along with
     # the computed eye aspect ratio for the frame
-    cv2.putText(frame, "Photos: {}".format(TOTAL), (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-    cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    # if args["displayInfo"]:
+    #     cv2.putText(frame, "Photos: {}".format(TOTAL), (10, 30),
+    #                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    #     cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
+    #                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
     # show the frame
     cv2.imshow("Frame", frame)
@@ -102,19 +124,6 @@ def eye_aspect_ratio(eye):
 
     # return the eye aspect ratio
     return ear
- 
-# construct the argument parse and parse the arguments
-ap = argparse.ArgumentParser()
-ap.add_argument("-p", "--shape-predictor",default="shape_predictor_68_face_landmarks.dat",
-    help="path to facial landmark predictor")
-ap.add_argument("-v", "--video", type=str, default="camera",
-    help="path to input video file")
-ap.add_argument("-t", "--threshold", type = float, default=0.2,
-    help="threshold to determine closed eyes")
-ap.add_argument("-f", "--frames", type = int, default=2,
-    help="the number of consecutive frames the eye must be below the threshold")
-ap.add_argument("-d", "--pictureDelay", type = float, default=9,
-	help="delay between blink detected to picture taken")
 
 def main() :
     # FINAL list of images to send to next step
@@ -157,143 +166,152 @@ def main() :
     time.sleep(1.0)
     
     # loop over frames from the video stream
-    while len(worstPhotos) < 9:
-        # if this is a file video stream, then we need to check if
-        # there any more frames left in the buffer to process
-        if fileStream and not vs.more():
-            break
-    
-        # grab the frame from the threaded video file stream, resize
-        # it, and convert it to grayscale
-        # channels)
-        frame = vs.read()
-        frame = imutils.resize(frame, width=1000)
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    
-        # detect faces in the grayscale frame
-        rects = detector(gray, 0)
+    while len(worstPhotos) < args["numCapturedPhotos"]:
+        try:
+            # if this is a file video stream, then we need to check if
+            # there any more frames left in the buffer to process
+            if fileStream and not vs.more():
+                break
 
-        key = 0
+            # grab the frame from the threaded video file stream, resize
+            # it, and convert it to grayscale
+            # channels)
+            frame = vs.read()
+            frame = imutils.resize(frame, width=1000)
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # loop over the face detections
-        for rect in rects:
-            # determine the facial landmarks for the face region, then
-            # convert the facial landmark (x, y)-coordinates to a NumPy
-            # array
-            shape = predictor(gray, rect)
-            shape = face_utils.shape_to_np(shape)
-    
-            # extract the left and right eye coordinates, then use the
-            # coordinates to compute the eye aspect ratio for both eyes
-            leftEye = shape[lStart:lEnd]
-            rightEye = shape[rStart:rEnd]
-            leftEAR = eye_aspect_ratio(leftEye)
-            rightEAR = eye_aspect_ratio(rightEye)
-    
-            # average the eye aspect ratio together for both eyes
-            ear = (leftEAR + rightEAR) / 2.0
-    
-            # compute the convex hull for the left and right eye, then
-            # visualize each of the eyes
-            # leftEyeHull = cv2.convexHull(leftEye)
-            # rightEyeHull = cv2.convexHull(rightEye)
-            # cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
-            # cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+            # detect faces in the grayscale frame
+            rects = detector(gray, 0)
 
-            # check to see if the eye aspect ratio is below the blink
-            # threshold, and if so, increment the blink frame counter
-            if ear < EYE_AR_THRESH:
-                # adds a delay after detecting the blink before taking the photo
-                # for i in range(args["pictureDelay"]): 
-                # frame = vs.read()
-                # frame = imutils.resize(frame, width=450)
-                # cv2.imwrite("bad_photo.jpg", frame)
+            key = 0
 
+            # loop over the face detections
+            for rect in rects:
+                # determine the facial landmarks for the face region, then
+                # convert the facial landmark (x, y)-coordinates to a NumPy
+                # array
+                shape = predictor(gray, rect)
+                shape = face_utils.shape_to_np(shape)
 
-                # empties the queue
-                afterBlink.empty()
+                # extract the left and right eye coordinates, then use the
+                # coordinates to compute the eye aspect ratio for both eyes
+                leftEye = shape[lStart:lEnd]
+                rightEye = shape[rStart:rEnd]
+                leftEAR = eye_aspect_ratio(leftEye)
+                rightEAR = eye_aspect_ratio(rightEye)
 
-                # saves the blink frame
-                afterBlink.put((ear, frame))
+                # average the eye aspect ratio together for both eyes
+                ear = (leftEAR + rightEAR) / 2.0
 
-                # saves the next frames
-                for i in range(10):
-                    if len(detector(gray, 0)) > 0:
-                        try:
-                            afterBlink.put(runFrames(vs, detector, predictor, TOTAL, ear))
-                        except:
-                            pass
+                # compute the convex hull for the left and right eye, then
+                # visualize each of the eyes
+                if args["displayInfo"]:
+                    leftEyeHull = cv2.convexHull(leftEye)
+                    rightEyeHull = cv2.convexHull(rightEye)
+                    cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+                    cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
 
-                # frames from the derivative method
-                derFrames = (earDerivative(beforeBlink, afterBlink))
-
-                # fig = plt.figure(figsize=(4, 8))
-                # columns = 1
-                # rows = 5
-                # for i in range(1, columns * rows + 1):
-                #     img = derFrames[0][i-1]
-                #     fig.add_subplot(rows, columns, i)
-                #     plt.imshow(img)
-                # plt.show()
-
-                # vets bad bad images
-                i = 0
-                while(i < len(derFrames[1])):
-                    if derFrames[1][i] > 0.22 or derFrames[1][i] < 0.2:
-                        derFrames[0].pop(i)
-                        derFrames[1].pop(i)
-                    else:
-                        i += 1
-
-                for photo in derFrames[0]:
-                    worstPhotos.append(photo)
-                    TOTAL += 1
-
-                # fig = plt.figure(figsize=(4, 8))
-                # columns = 1
-                # rows = len(derFrames[0])
-                # for i in range(1, columns * rows + 1):
-                #     img = derFrames[0][i - 1]
-                #     fig.add_subplot(rows, columns, i)
-                #     plt.imshow(img)
-                # plt.show()
+                # check to see if the eye aspect ratio is below the blink
+                # threshold, and if so, increment the blink frame counter
+                if ear < EYE_AR_THRESH:
+                    # adds a delay after detecting the blink before taking the photo
+                    # for i in range(args["pictureDelay"]):
+                    # frame = vs.read()
+                    # frame = imutils.resize(frame, width=450)
+                    # cv2.imwrite("bad_photo.jpg", frame)
 
 
+                    # empties the queue
+                    afterBlink.empty()
+
+                    # saves the blink frame
+                    afterBlink.put((ear, frame))
+
+                    # saves the next frames
+                    for i in range(10):
+                        if len(detector(gray, 0)) > 0:
+                            try:
+                                afterBlink.put(runFrames(vs, detector, predictor, TOTAL, ear))
+                            except:
+                                pass
+
+                    # frames from the derivative method
+                    derFrames = (earDerivative(beforeBlink, afterBlink))
+
+                    # fig = plt.figure(figsize=(4, 8))
+                    # columns = 1
+                    # rows = 5
+                    # for i in range(1, columns * rows + 1):
+                    #     img = derFrames[0][i-1]
+                    #     fig.add_subplot(rows, columns, i)
+                    #     plt.imshow(img)
+                    # plt.show()
+
+                    if derFrames[1][args["pictureDelay"]] < args["upperEAR"] and derFrames[1][args["pictureDelay"]] > args["lowerEAR"]:
+                        worstPhotos.append(derFrames[0][args["pictureDelay"]])
+                        derFrames[0].pop(args["pictureDelay"])
+                        derFrames[1].pop(args["pictureDelay"])
+                        TOTAL += 1
+
+                    # vets bad bad images
+                    i = 0
+                    while(i < len(derFrames[1])):
+                        if derFrames[1][i] > args["upperEAR"] or derFrames[1][i] < args["lowerEAR"]:
+                            derFrames[0].pop(i)
+                            derFrames[1].pop(i)
+                        else:
+                            i += 1
+
+                    for photo in derFrames[0]:
+                        worstPhotos.append(photo)
+                        TOTAL += 1
+
+                    # fig = plt.figure(figsize=(4, 8))
+                    # columns = 1
+                    # rows = len(derFrames[0])
+                    # for i in range(1, columns * rows + 1):
+                    #     img = derFrames[0][i - 1]
+                    #     fig.add_subplot(rows, columns, i)
+                    #     plt.imshow(img)
+                    # plt.show()
 
 
 
-            # otherwise, the eye aspect ratio is not below the blink
-            # threshold
-            else:
-                # removes the oldest queue item if 10 frames have already been saved
-                if beforeBlink.qsize() >= 20:
-                    beforeBlink.get()
+                # elif ear > 0.45:
+                #     worstPhotos.append(frame)
 
-                # adds to the queue of frames before the blink
-                beforeBlink.put((ear,frame))
+                # otherwise, the eye aspect ratio is not below the blink 69
+                # threshold
+                else:
+                    # removes the oldest queue item if 10 frames have already been saved
+                    if beforeBlink.qsize() >= 20:
+                        beforeBlink.get()
 
-                # if the eyes were closed for a sufficient number of
-                # then increment the total number of blinks
-                if COUNTER >= EYE_AR_CONSEC_FRAMES:
-                    TOTAL += 1
-    
-                # reset the eye frame counter
-                COUNTER = 0
+                    # adds to the queue of frames before the blink
+                    beforeBlink.put((ear,frame))
 
-                # draw the total number of blinks on the frame along with
-                # the computed eye aspect ratio for the frame
-                cv2.putText(frame, "Photos: {}".format(TOTAL), (10, 30),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    # if the eyes were closed for a sufficient number of
+                    # then increment the total number of blinks
+                    if COUNTER >= EYE_AR_CONSEC_FRAMES:
+                        TOTAL += 1
 
-                # show the frame
-                cv2.imshow("Frame", frame)
-                key = cv2.waitKey(1) & 0xFF
-    
+                    # reset the eye frame counter
+                    COUNTER = 0
 
+                    # draw the total number of blinks on the frame along with
+                    # the computed eye aspect ratio for the frame
+                    if args["displayInfo"]:
+                        cv2.putText(frame, "Photos: {}".format(TOTAL), (10, 30),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                        cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-     
+                    # show the frame
+                    cv2.imshow("Frame", frame)
+                    key = cv2.waitKey(1) & 0xFF
+        except:
+            pass
+
         # if the `q` key was pressed, break from the loop
         if key == ord("q"):
             break
