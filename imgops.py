@@ -6,6 +6,8 @@ import cv2
 import imutils
 from imutils import face_utils
 import dlib
+from PIL import Image, ImageFont, ImageDraw
+import numpy as np
 
 # internal imports
 import faceops
@@ -17,6 +19,8 @@ predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["right_eye"]
 (mStart, mEnd) = face_utils.FACIAL_LANDMARKS_IDXS["mouth"]
+
+font = ImageFont.truetype('impact.ttf', size=44)
 
 def getFaceFeatures(img, pyramids=1):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -51,4 +55,23 @@ def getMARs(face_list):
     if len(MAR_list) == 0:
         MAR_list.append(0)
     return MAR_list
+
+def writeMeme(image, text):
+    text = text.upper()
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    pilImage = Image.fromarray(rgb)
+    draw = ImageDraw.Draw(pilImage)
+    w, h = draw.textsize(text, font=font)
+    W, H = image.shape[1], image.shape[0]
+    textX = (W-w)/2
+    textY = 25
+    draw.text((textX+2, textY+2), text, fill='black', font=font)
+    draw.text((textX-2, textY+2), text, fill='black', font=font)
+    draw.text((textX+2, textY-2), text, fill='black', font=font)
+    draw.text((textX-2, textY-2), text, fill='black', font=font)
+    draw.text((textX, textY), text, fill='white', font=font)
+    cvImageRGB = np.array(pilImage)
+    cvImage = cv2.cvtColor(cvImageRGB, cv2.COLOR_RGB2BGR)
+
+    return cvImage
 

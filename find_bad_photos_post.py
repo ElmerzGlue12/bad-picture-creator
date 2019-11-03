@@ -53,13 +53,17 @@ for i in mouthBuf:
     cv2.waitKey(0)
 cv2.destroyAllWindows()
 
-eyeBufList = {}
-mouthBufList = {}
+eyeBufList = []
+mouthBufList = []
 
 for i in eyeBuf:
-    eyeBufList[i[0]] = get_results_for_image(buffer[i[0]])
+    results = get_results_for_image(buffer[i[0]])
+    results["id"] = i[0]
+    eyeBufList.append(results)
 for i in mouthBuf:
-    mouthBufList[i[0]] = get_results_for_image(buffer[i[0]])
+    results = get_results_for_image(buffer[i[0]])
+    results["id"] = i[0]
+    mouthBufList.append(results)
 
 print(eyeBufList)
 print(mouthBufList)
