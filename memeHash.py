@@ -4,7 +4,12 @@ import numpy as np
 
 
 def openFile(file):
-    lineList = [line.rstrip('\n') for line in open(file)]
+    lineList = []
+    for line in open(file):
+        items = line.split(',')
+        while len(items) < 2:
+            items.append('')
+        lineList.append((items[0], items[1]))
     return lineList
 
 def getRandomMeme(lineList):
@@ -17,16 +22,16 @@ sorrowMemes = openFile('sorrow.txt')
 surpriseMemes = openFile('surprise.txt')
 
 def getEmotionListName(dictionary):
-   list = [dictionary['joy:'], dictionary['sorrow:'], dictionary['anger:'], dictionary['surprise:']]
-   temp = list.index(max(list))
+   l = [dictionary['joy:'], dictionary['sorrow:'], dictionary['anger:'], dictionary['surprise:']]
+   temp = l.index(max(l))
    if temp == 0:
-       return 'joyMemes'
+       return joyMemes
    elif temp == 1:
-       return 'sorrowMemes'
+       return sorrowMemes
    elif temp == 2:
-       return 'angerMemes'
+       return angerMemes
    else:
-       return 'surpriseMemes'
+       return surpriseMemes
 
 def memeCreator(dictionary):
     emotionListName = getEmotionListName(dictionary)

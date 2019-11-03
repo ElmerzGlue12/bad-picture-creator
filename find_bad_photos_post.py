@@ -6,7 +6,7 @@ import imutils
 from imutils import face_utils
 import imgops
 import numpy as np
-from google_vision import get_results_for_image
+from google_vision import get_results_for_image as google_results
 
 # Get video from Webcam
 cap = cv2.VideoCapture(0)
@@ -27,6 +27,7 @@ while len(buffer) < 100:  # only record 100 frames
 cap.release()
 cv2.destroyAllWindows()
 
+print("Finding your face...")
 # get EARs for each frame
 EARs = []
 MARs = []
@@ -37,33 +38,34 @@ for img in buffer:
     EARs.append(EAR)
     MARs.append(MAR)
 
+print("Looking really hard at your face...")
 # convert to numpy array for quicker sorting
 EARray = np.array(EARs)
 MARray = np.array(MARs)
 indexOrderEyes = np.argsort(EARray, axis=0)
 indexOrderMouth = np.argsort(MARray, axis=0)
-eyeBuf = indexOrderEyes[0:5][0:5]
-mouthBuf = indexOrderMouth[-5:][-5:]
-
-for i in eyeBuf:
-    cv2.imshow('img', buffer[i[0]])
-    cv2.waitKey(0)
-for i in mouthBuf:
-    cv2.imshow('img', buffer[i[0]])
-    cv2.waitKey(0)
-cv2.destroyAllWindows()
+eyeBuf = indexOrderEyes[0:3][0:3]
+mouthBuf = indexOrderMouth[-3:][-3:]
 
 eyeBufList = []
 mouthBufList = []
 
+print("Sending your face to Google...")
 for i in eyeBuf:
-    results = get_results_for_image(buffer[i[0]])
+    results = google_results(buffer[i[0]])
     results["id"] = i[0]
     eyeBufList.append(results)
 for i in mouthBuf:
-    results = get_results_for_image(buffer[i[0]])
+    results = google_results(buffer[i[0]])
     results["id"] = i[0]
     mouthBufList.append(results)
 
-print(eyeBufList)
-print(mouthBufList)
+print("Turning your face into memes...")
+for meme in imgops.getMemeBuffer(eyeBufList, buffer):
+    cv2.imshow("Meme", meme)
+    cv2.waitKey(0)
+for meme in imgops.getMemeBuffer(mouthBufList, buffer):
+    cv2.imshow("Meme", meme)
+    cv2.waitKey(0)
+
+cv2.destroyAllWindows
