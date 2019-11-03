@@ -6,7 +6,6 @@ import imutils
 from imutils import face_utils
 import imgops
 import numpy as np
-from google_vision import get_results_for_image
 
 # Get video from Webcam
 cap = cv2.VideoCapture(0)
@@ -52,18 +51,3 @@ for i in mouthBuf:
     cv2.imshow('img', buffer[i[0]])
     cv2.waitKey(0)
 cv2.destroyAllWindows()
-
-eyeBufList = []
-mouthBufList = []
-
-for i in eyeBuf:
-    results = get_results_for_image(buffer[i[0]])
-    results["id"] = i[0]
-    eyeBufList.append(results)
-for i in mouthBuf:
-    results = get_results_for_image(buffer[i[0]])
-    results["id"] = i[0]
-    mouthBufList.append(results)
-
-print(eyeBufList)
-print(mouthBufList)
