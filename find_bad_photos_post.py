@@ -6,10 +6,7 @@ import imutils
 from imutils import face_utils
 import imgops
 import numpy as np
-<<<<<<< HEAD
 from google_vision import get_results_for_image as google_results
-=======
->>>>>>> 9a21167b85f241b2b1c5779d248dafc82fce2bee
 
 # Get video from Webcam
 cap = cv2.VideoCapture(0)
