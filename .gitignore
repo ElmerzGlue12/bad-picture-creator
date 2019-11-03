@@ -1,6 +1,9 @@
 # vscode stuff
 .vscode/
 
+#credentials
+vandyhacks_googlecred_2019.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
