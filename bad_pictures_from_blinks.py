@@ -13,6 +13,8 @@ import cv2
 import queue
 import numpy as np
 from matplotlib import pyplot as plt
+from google_vision import get_results_for_image as google_results
+import imgops
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -335,8 +337,20 @@ def main() :
     #     plt.imshow(img)
     # plt.show()
 
+
+
     # do a bit of cleanup
     cv2.destroyAllWindows()
     vs.stop()
+
+    dicts = []
+    for i in range(len(worstPhotos)):
+        result = google_results(worstPhotos[i])
+        result['id'] = i
+        dicts.append(result)
+    for meme in imgops.getMemeBuffer(dicts, worstPhotos):
+        cv2.imshow("Meme", meme)
+        cv2.waitKey(0)
+    cv2.destroyAllWindows()
 if __name__ == '__main__' :
     main()
