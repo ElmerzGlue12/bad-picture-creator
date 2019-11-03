@@ -6,9 +6,12 @@ import cv2
 import imutils
 from imutils import face_utils
 import dlib
+<<<<<<< HEAD
 from PIL import Image, ImageFont, ImageDraw
 import numpy as np
 import memeHash as meme
+=======
+>>>>>>> 9a21167b85f241b2b1c5779d248dafc82fce2bee
 
 # internal imports
 import faceops
@@ -21,8 +24,11 @@ predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["right_eye"]
 (mStart, mEnd) = face_utils.FACIAL_LANDMARKS_IDXS["mouth"]
 
+<<<<<<< HEAD
 font = ImageFont.truetype('impact.ttf', size=38)
 
+=======
+>>>>>>> 9a21167b85f241b2b1c5779d248dafc82fce2bee
 def getFaceFeatures(img, pyramids=1):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     rects = detector(gray, pyramids)
@@ -95,3 +101,4 @@ def getMemeBuffer(dictList, buffer):
         img = writeMeme(img, top, bottom)
         memes.append(img)
     return memes
+
