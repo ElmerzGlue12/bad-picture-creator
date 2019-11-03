@@ -1,3 +1,5 @@
+#!/usr/bin/env python3.7
+
 from cfgen import GrammarModel # https://github.com/williamgilpin/cfgen
 import nltk
 from random import seed
