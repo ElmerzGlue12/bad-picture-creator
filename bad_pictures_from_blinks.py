@@ -51,7 +51,7 @@ def runFrames(vs, detector, predictor, TOTAL, ear):
 
     frame = vs.read()
 
-    frame = imutils.resize(frame, width=450)
+    frame = imutils.resize(frame, width=1000)
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -117,6 +117,9 @@ ap.add_argument("-d", "--pictureDelay", type = float, default=9,
 	help="delay between blink detected to picture taken")
 
 def main() :
+    # FINAL list of images to send to next step
+    worstPhotos = []
+
     args = vars(ap.parse_args())
     EYE_AR_THRESH = args['threshold']
     EYE_AR_CONSEC_FRAMES = args['frames']
@@ -154,7 +157,7 @@ def main() :
     time.sleep(1.0)
     
     # loop over frames from the video stream
-    while True:
+    while len(worstPhotos) < 9:
         # if this is a file video stream, then we need to check if
         # there any more frames left in the buffer to process
         if fileStream and not vs.more():
@@ -164,7 +167,7 @@ def main() :
         # it, and convert it to grayscale
         # channels)
         frame = vs.read()
-        frame = imutils.resize(frame, width=450)
+        frame = imutils.resize(frame, width=1000)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     
         # detect faces in the grayscale frame
@@ -205,7 +208,7 @@ def main() :
                 # frame = vs.read()
                 # frame = imutils.resize(frame, width=450)
                 # cv2.imwrite("bad_photo.jpg", frame)
-                TOTAL += 1
+
 
                 # empties the queue
                 afterBlink.empty()
@@ -224,40 +227,36 @@ def main() :
                 # frames from the derivative method
                 derFrames = (earDerivative(beforeBlink, afterBlink))
 
-                fig = plt.figure(figsize=(4, 8))
-                columns = 1
-                rows = 5
-                for i in range(1, columns * rows + 1):
-                    img = derFrames[0][i-1]
-                    fig.add_subplot(rows, columns, i)
-                    plt.imshow(img)
-                plt.show()
+                # fig = plt.figure(figsize=(4, 8))
+                # columns = 1
+                # rows = 5
+                # for i in range(1, columns * rows + 1):
+                #     img = derFrames[0][i-1]
+                #     fig.add_subplot(rows, columns, i)
+                #     plt.imshow(img)
+                # plt.show()
 
-
-                #deletes the first and last images from the derivative method
-                # derFrames[0].pop(4)
-                # derFrames[1].pop(4)
-                #
-                # derFrames[0].pop(0)
-                # derFrames[1].pop(0)
-
+                # vets bad bad images
                 i = 0
                 while(i < len(derFrames[1])):
-                    if derFrames[1][i] >= 0.2:
+                    if derFrames[1][i] > 0.22 or derFrames[1][i] < 0.2:
                         derFrames[0].pop(i)
                         derFrames[1].pop(i)
                     else:
                         i += 1
 
+                for photo in derFrames[0]:
+                    worstPhotos.append(photo)
+                    TOTAL += 1
 
-                fig = plt.figure(figsize=(4, 8))
-                columns = 1
-                rows = len(derFrames[0])
-                for i in range(1, columns * rows + 1):
-                    img = derFrames[0][i - 1]
-                    fig.add_subplot(rows, columns, i)
-                    plt.imshow(img)
-                plt.show()
+                # fig = plt.figure(figsize=(4, 8))
+                # columns = 1
+                # rows = len(derFrames[0])
+                # for i in range(1, columns * rows + 1):
+                #     img = derFrames[0][i - 1]
+                #     fig.add_subplot(rows, columns, i)
+                #     plt.imshow(img)
+                # plt.show()
 
 
 
@@ -298,7 +297,16 @@ def main() :
         # if the `q` key was pressed, break from the loop
         if key == ord("q"):
             break
-    
+
+    fig = plt.figure(figsize=(4, 8))
+    columns = 3
+    rows = int(len(worstPhotos)/3)
+    for i in range(1, columns * rows + 1):
+        img = worstPhotos[i - 1]
+        fig.add_subplot(rows, columns, i)
+        plt.imshow(img)
+    plt.show()
+
     # do a bit of cleanup
     cv2.destroyAllWindows()
     vs.stop()
