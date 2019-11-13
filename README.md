@@ -11,11 +11,11 @@ This project was created for VandyHacks VI in November 2019 in 36 hours. Our ori
 ## Usage
 ### Realtime Processing
 `py bad_pictures_from_blinks.py`
-This executable will grab frames from the webcam and detect blinking frames in real time. It then uses the rate of change of eye aspect ratio to find mid-blink photos and save them, then quit and add text based on Google Vision emotion guesses after 10-12 photos depending on the time taken. Not recommended for computers with low- to mid-range processing power, as face detection and blink detection in real time requires fast image processing. 
+-This executable will grab frames from the webcam and detect blinking frames in real time. It then uses the rate of change of eye aspect ratio to find mid-blink photos and save them, then quit and add text based on Google Vision emotion guesses after 10-12 photos depending on the time taken. Not recommended for computers with low- to mid-range processing power, as face detection and blink detection in real time requires fast image processing. 
 
 ### Post-processing
 `py find_bad_photos_post.py`
-This executable will grab frames from the webcam for about 5 seconds continuously and finds the photos with the smallest eye aspect ratio and the largest mouth aspect ratio. It will then get emotion data for each of these photos and assign text to each depending on the emotion. 
+-This executable will grab frames from the webcam for about 5 seconds continuously and finds the photos with the smallest eye aspect ratio and the largest mouth aspect ratio. It will then get emotion data for each of these photos and assign text to each depending on the emotion. 
 
 ## Debugging and Proof-of-Concept
 These files were developed during our research for proof of concept and testing. We considered removing them, but elected to leave them here in case they can help anyone understand how this application's image processing works. 
